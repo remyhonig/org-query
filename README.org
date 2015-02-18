@@ -50,7 +50,7 @@
                 ((org-agenda-overriding-header "Active projects without next task")
                  (org-agenda-skip-function
                   (rmh/select "tree"
-                              (and (rmh/if-ancestor-p 'rmh/is-active-project-p)
+                              (and (rmh/is-active-project-p)
                                    (not (rmh/if-child-p 'rmh/is-unstucking-action-p)))))
                  (org-tags-match-list-sublevels 't)
                  (org-agenda-sorting-strategy
