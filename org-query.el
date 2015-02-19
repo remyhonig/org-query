@@ -30,17 +30,17 @@
 (defun org-query-if-todo-p (&optional todo-states)
   "Is headline a task and is it's todo kwd one of TODO-STATES?"
   (setq match-states (cond (todo-states todo-states) (t org-todo-keywords-1)))
-                                        ;(message "if-todo-p match %S on %S" match-states (org-heading-components))
+  ;;(message "if-todo-p match %S on %S" match-states (org-heading-components))
   (not (null (member (org-get-todo-state) match-states))))
 
 (defun org-query-if-project-p (&optional todo-states)
   "Is headline a project and is it's todo kwd one of TODO-STATES?"
   (setq match-states (cond (todo-states todo-states) (t org-todo-keywords-1)))
-                                        ;(message "if-project-p match %S on %S" match-states (org-heading-components))
+  ;;(message "if-project-p match %S on %S" match-states (org-heading-components))
   (and
-                                        ; is headline a task
+   ;; is headline a task
    (org-query-if-todo-p match-states)
-                                        ; does this headline have any tasks in any state
+   ;; does this headline have any tasks in any state
    (org-query-if-child-p 'org-query-if-todo-p)))
 
 (defun org-query-if-project-task-p (&optional project-todo-states task-todo-states)
@@ -50,11 +50,11 @@ TASK-TODO-STATES optional list of todo states the task should be in"
   (setq match-project-states (cond (project-todo-states project-todo-states) (t org-todo-keywords-1)))
   (setq match-task-states (cond (task-todo-states task-todo-states) (t org-todo-keywords-1)))
   (and
-                                        ; headline should be a todo 
+   ;; headline should be a todo 
    (org-query-if-todo-p match-task-states)
-                                        ; should not have a child; otherwise i'd be a project
+   ;; should not have a child;; otherwise i'd be a project
    (not (org-query-if-child-p 'org-query-if-todo-p))
-                                        ; is one it's ancestors a task
+   ;; is one it's ancestors a task
    (org-query-if-ancestor-p (apply-partially 'org-query-if-todo-p match-project-states))))
 
 (defun org-query-skip-headline (func)
