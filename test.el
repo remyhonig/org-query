@@ -1,4 +1,5 @@
 (require 'org-query)
+(require 'xtest)
 
 (xt-deftest org-query-test-if-is-backlog-task-in-active-project
   (xt-note "A TODO task in an active project. Subprojects are not tasks.")
