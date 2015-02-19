@@ -1,5 +1,4 @@
 (require 'org-query)
-(require 'xtest)
 
 (xt-deftest org-query-test-if-is-backlog-task-in-active-project
   (xt-note "A TODO task in an active project. Subprojects are not tasks.")
@@ -80,7 +79,7 @@
                "* TODO A\n-!-** B\n")))
 
 (xt-deftest org-query-test-skip-headline
-  (xt-note "")
+  (xt-note "A succesful selection will move the cursor to the end of the current headline")
   (xtd-setup= (lambda (_) (org-mode)
                 (let ((marker (org-query-skip-headline 'org-query-if-todo-p)))
                   (if marker (goto-char marker))))
@@ -90,7 +89,7 @@
                "* A-!-\n** B\n* C\n")))
 
 (xt-deftest org-query-test-skip-tree
-  (xt-note "")
+  (xt-note "A succesful selection will move the cursor to the end of the current tree")
   (xtd-setup= (lambda (_) (org-mode)
                 (let ((marker (org-query-skip-tree 'org-query-if-todo-p)))
                   (if marker (goto-char marker))))
@@ -98,3 +97,14 @@
                "* TODO A\n** B-!-\n")
               ("* A-!-\n** B\n* C\n"
                "* A-!-\n** B\n* C\n")))
+
+(xt-deftest org-query-test-select-headline
+  (xt-note "A succesful selection will not advance the cursor")
+  (xtd-setup= (lambda (_) (org-mode)
+                (let* ((func (org-query-select "headline" (org-query-if-todo-p)))
+                       (marker (funcall func)))
+                  (if marker (goto-char marker))))
+              ("-!-* TODO A\n** B\n"
+               "-!-* TODO A\n** B\n")
+              ("* A-!-\n** B\n* C\n"
+               "* A\n-!-** B\n* C\n")))
