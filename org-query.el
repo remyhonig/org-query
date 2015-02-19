@@ -1,3 +1,33 @@
+;;; org-query.el --- Create complex but readable skip-functions for org-agenda
+
+;; Copyright (C) 2015  Remy Honig
+
+;; Author           : Remy Honig <remyhonig@gmail.com>
+;; Package-Requires : ((org "8.2.7"))
+;; URL              : https://github.com/remyhonig/org-query
+;; Version          : 20150219.1
+;; Keywords         : news
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;; See https://github.com/remyhonig/org-query for usage.
+
+;;; Code:
+
+(require 'org)
+
 (defun org-query-if-ancestor-p (func)
   "Is any ancestor t for FUNC."
   (let ((result nil))
@@ -58,7 +88,7 @@ TASK-TODO-STATES optional list of todo states the task should be in"
    (org-query-if-ancestor-p (apply-partially 'org-query-if-todo-p match-project-states))))
 
 (defun org-query-skip-headline (func)
-  "Return marker to next headline if FUNC satisfies"
+  "Return marker to next headline if FUNC satisfies."
   (save-restriction
     (widen)
     (let ((marker (save-excursion (or (outline-next-heading) (point-max)))))
@@ -66,7 +96,7 @@ TASK-TODO-STATES optional list of todo states the task should be in"
       (if satisfied marker nil))))
 
 (defun org-query-skip-tree (func)
-  "Return marker to next headline if FUNC satisfies"
+  "Return marker to next headline if FUNC satisfies."
   (save-restriction
     (widen)
     (let ((marker (save-excursion (org-end-of-subtree t))))
@@ -74,7 +104,9 @@ TASK-TODO-STATES optional list of todo states the task should be in"
       (if satisfied marker nil))))
 
 (defmacro org-query-select (resolution body)
-  "Create skip-function with condition in FUNC."
+  "Skip one headline or the whole tree (depending on RESOLUTION) if it satisfies the condition in BODY.
+Argument RESOLUTION \"headline\" or \"tree\"
+Argument BODY should return t or nil"
   ()
   (let ((skipfunc (intern (concat "org-query-skip-" resolution))))
     `(lambda ()
@@ -82,3 +114,5 @@ TASK-TODO-STATES optional list of todo states the task should be in"
         (lambda () (not (,@body)))))))
 
 (provide 'org-query)
+
+;;; org-query.el ends here
