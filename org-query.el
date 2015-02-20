@@ -59,26 +59,26 @@
 
 (defun org-query-if-todo-p (&optional todo-states)
   "Is headline a task and is it's todo kwd one of TODO-STATES?"
-  (setq match-states (cond (todo-states todo-states) (t org-todo-keywords-1)))
-  ;;(message "if-todo-p match %S on %S" match-states (org-heading-components))
-  (not (null (member (org-get-todo-state) match-states))))
+  (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
+    ;; (message "if-todo-p match %S on %S %S" match-states (org-heading-components) (org-get-todo-state))
+    (not (null (member (org-get-todo-state) match-states)))))
 
 (defun org-query-if-project-p (&optional todo-states)
   "Is headline a project and is it's todo kwd one of TODO-STATES?"
-  (setq match-states (cond (todo-states todo-states) (t org-todo-keywords-1)))
-  ;;(message "if-project-p match %S on %S" match-states (org-heading-components))
-  (and
-   ;; is headline a task
-   (org-query-if-todo-p match-states)
-   ;; does this headline have any tasks in any state
-   (org-query-if-child-p 'org-query-if-todo-p)))
+  (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
+    ;; (message "if-project-p match %S on %S with %S and %S" match-states (org-heading-components) org-todo-keywords (mapcar 'car org-todo-kwd-alist))
+    (and
+     ;; is headline a task
+     (org-query-if-todo-p match-states)
+     ;; does this headline have any tasks in any state
+     (org-query-if-child-p 'org-query-if-todo-p))))
 
 (defun org-query-if-project-task-p (&optional project-todo-states task-todo-states)
   "Is headline a task in a project?
 PROJECT-TODO-STATES optional list of todo states the project should be in
 TASK-TODO-STATES optional list of todo states the task should be in"
-  (setq match-project-states (cond (project-todo-states project-todo-states) (t org-todo-keywords-1)))
-  (setq match-task-states (cond (task-todo-states task-todo-states) (t org-todo-keywords-1)))
+  (setq match-project-states (cond (project-todo-states project-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
+  (setq match-task-states (cond (task-todo-states task-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
   (and
    ;; headline should be a todo 
    (org-query-if-todo-p match-task-states)
