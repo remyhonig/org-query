@@ -1,4 +1,4 @@
-[[https://travis-ci.org/remyhonig/org-query.svg?branch=master]]
+[[https://travis-ci.org/remyhonig/org-query][https://travis-ci.org/remyhonig/org-query.svg?branch=master]]
 
 * Usage
 
