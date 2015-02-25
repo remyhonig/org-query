@@ -26,7 +26,7 @@
 (xt-deftest org-query-test-if-ancestor-p
   (xt-note "Any ancestor of the current headline should match the condition.")
   (xtd-return= (org-query-test-do 't
-                (org-query-if-ancestor-p (apply-partially 'org-query-if-headline-matches-p "A")))
+                (org-query-struct-ancestor (apply-partially 'org-query-stringmatch "A")))
                ("* A\n** C-!-\n" t)
                ("* B\n** C-!-\n" nil)
                ("* A\n** Bn*** C-!-\n" t)))
@@ -34,7 +34,7 @@
 (xt-deftest org-query-test-inbox
   (xt-note "Any headline in [Inbox] should match wether it is a task or not.")
   (xtd-return= (org-query-test-do 't
-                (org-query-if-ancestor-p (apply-partially 'org-query-if-headline-matches-p "-Inbox-")))
+                (org-query-struct-ancestor (apply-partially 'org-query-stringmatch "-Inbox-")))
                ("* -Inbox-\n** TODO new-!-\n" t)
                ("* Other\n** TODO new-!-\n" nil)
                ("* -Inbox-\n** not a todo-!-\n" t)))
@@ -61,7 +61,7 @@
 (xt-deftest org-query-test-if-child-is-task
   (xt-note "Does any child of the current headline satisfy the condition.")
   (xtd-return= (org-query-test-do 't
-                 (org-query-if-child-p (apply-partially 'org-query-if-headline-matches-p "Hoi")))
+                 (org-query-struct-child (apply-partially 'org-query-stringmatch "Hoi")))
                ("* TODO A-!-\n** Hoi\n" t)
                ("* TODO A-!-\n** B\n" nil)))
 
@@ -80,7 +80,7 @@
 (xt-deftest org-query-test-skip-headline
   (xt-note "A succesful selection will move the cursor to the end of the current headline")
   (xtd-setup= (org-query-test-do nil
-               (let ((marker (org-query-skip-headline 'org-query-if-todo-p)))
+               (let ((marker (org-query-skip-headline 'org-query-todo)))
                   (if marker (goto-char marker))))
               ("* TODO A-!-\n** B\n"
                "* TODO A\n-!-** B\n")
@@ -90,7 +90,7 @@
 (xt-deftest org-query-test-skip-tree
   (xt-note "A succesful selection will move the cursor to the end of the current tree")
   (xtd-setup= (org-query-test-do nil
-               (let ((marker (org-query-skip-tree 'org-query-if-todo-p)))
+               (let ((marker (org-query-skip-tree 'org-query-todo)))
                   (if marker (goto-char marker))))
               ("* TODO A-!-\n** B\n"
                "* TODO A\n** B-!-\n")
@@ -100,7 +100,7 @@
 (xt-deftest org-query-test-select-headline
   (xt-note "A succesful selection will not advance the cursor")
   (xtd-setup= (org-query-test-do nil
-               (let* ((func (org-query-select "headline" (org-query-if-todo-p)))
+               (let* ((func (org-query-select "headline" (org-query-todo)))
                       (marker (funcall func)))
                  (if marker (goto-char marker))))
               ("-!-* TODO A\n** B\n"

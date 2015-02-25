@@ -28,24 +28,23 @@
 
 (require 'org)
 
-(defun org-query-if-ancestor-p (func)
-  "Is any ancestor t for FUNC."
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;; structure walking ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun org-query-struct-ancestor (func)
+  "Is any ancestor t for FUNC.
+Return t if it does or nil if it does not."
   (let ((result nil))
     (save-excursion
       (while (and (not result) (org-up-heading-safe))
         (setq result (funcall func))))
     result))
 
-(defun org-query-if-headline-matches-p (match)
-  "Is headline at point a MATCH."
-  (not (null (string-match match (nth 4 (org-heading-components))))))
-
-(defun org-query-is-parent-headline-p (match)
-  "Does parent headline value MATCH."
-  (org-query-if-ancestor-p (apply-partially 'org-query-if-headline-matches-p match)))
-
-(defun org-query-if-child-p (func)
-  "Is any child satisfying FUNC."
+(defun org-query-struct-child (func)
+  "Is any child satisfying FUNC.
+Return t if it does or nil if it does not."
   (let ((satisfied)
         (subtree-end (save-excursion (org-end-of-subtree t))))
     (save-excursion
@@ -57,11 +56,35 @@
           (setq satisfied t))))
     satisfied))
 
-(defun org-query-if-todo-p (&optional todo-states)
+(defun org-query-struct-headline (func)
+  "Does the headline at point satisfy FUNC.
+Return t if it does or nil if it does not.
+This function is mainly used as a single point to print debug messages."
+  (funcall func))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;; headline matching ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun org-query-stringmatch (match)
+  "Is headline at point a MATCH."
+  (not (null (string-match match (nth 4 (org-heading-components))))))
+
+(defun org-query-todo (&optional todo-states)
   "Is headline a task and is it's todo kwd one of TODO-STATES?"
   (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
     ;; (message "if-todo-p match %S on %S %S" match-states (org-heading-components) (org-get-todo-state))
     (not (null (member (org-get-todo-state) match-states)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; convenience functions ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun org-query-is-parent-headline-p (match)
+  "Does parent headline value MATCH."
+  (org-query-struct-ancestor (apply-partially 'org-query-stringmatch match)))
 
 (defun org-query-if-project-p (&optional todo-states)
   "Is headline a project and is it's todo kwd one of TODO-STATES?"
@@ -69,9 +92,9 @@
     ;; (message "if-project-p match %S on %S with %S and %S" match-states (org-heading-components) org-todo-keywords (mapcar 'car org-todo-kwd-alist))
     (and
      ;; is headline a task
-     (org-query-if-todo-p match-states)
-     ;; does this headline have any tasks in any state
-     (org-query-if-child-p 'org-query-if-todo-p))))
+     (org-query-todo match-states)
+     ;; does any child have a todo state
+     (org-query-struct-child 'org-query-todo))))
 
 (defun org-query-if-project-task-p (&optional project-todo-states task-todo-states)
   "Is headline a task in a project?
@@ -81,11 +104,16 @@ TASK-TODO-STATES optional list of todo states the task should be in"
   (setq match-task-states (cond (task-todo-states task-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
   (and
    ;; headline should be a todo 
-   (org-query-if-todo-p match-task-states)
+   (org-query-todo match-task-states)
    ;; should not have a child;; otherwise i'd be a project
-   (not (org-query-if-child-p 'org-query-if-todo-p))
+   (not (org-query-struct-child 'org-query-todo))
    ;; is one it's ancestors a task
-   (org-query-if-ancestor-p (apply-partially 'org-query-if-todo-p match-project-states))))
+   (org-query-struct-ancestor (apply-partially 'org-query-todo match-project-states))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; skipping functions ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun org-query-skip-headline (func)
   "Return marker to next headline if FUNC satisfies."
@@ -102,6 +130,11 @@ TASK-TODO-STATES optional list of todo states the task should be in"
     (let ((marker (save-excursion (org-end-of-subtree t))))
       (setq satisfied (funcall func))
       (if satisfied marker nil))))
+
+
+;;;;;;;;;
+;; DSL ;;
+;;;;;;;;;
 
 (defmacro org-query-select (resolution body)
   "Skip one headline or the whole tree (depending on RESOLUTION) if it satisfies the condition in BODY.
