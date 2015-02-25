@@ -6,7 +6,7 @@
 ;; Package-Requires : ((org "8.2.7"))
 ;; URL              : https://github.com/remyhonig/org-query
 ;; Version          : 20150219.1
-;; Keywords         : news
+;; Keywords         : calendar
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
