@@ -12,7 +12,6 @@
      (setq org-query-test-result (,@body))
      org-query-test-result))
 
-(defvar org-query-test-kwds "#+SEQ_TODO: TODO NEXT | DONE")
 
 (xt-deftest org-query-test-if-is-backlog-task-in-active-project
   (xt-note "A TODO task in an active project. Subprojects are not tasks.")
