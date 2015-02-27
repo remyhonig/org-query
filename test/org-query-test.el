@@ -1,17 +1,6 @@
-(require 'org-query)
+(load-file "org-query.el")
+(load-file "org-query-gtd.el")
 (require 'xtest)
-
-(defmacro org-query-test-do (with-seq-todo body)
-  `(lambda (_)
-     (if ,with-seq-todo
-         (save-excursion
-           (goto-char (point-min))
-           ;; Without this in the buffer org-mode will not recognize NEXT as a todo state.
-           (insert "#+SEQ_TODO: TODO NEXT | DONE\n")))
-     (org-mode)
-     (setq org-query-test-result (,@body))
-     org-query-test-result))
-
 
 (xt-deftest org-query-test-if-is-backlog-task-in-active-project
   (xt-note "A TODO task in an active project. Subprojects are not tasks.")
@@ -25,7 +14,7 @@
 (xt-deftest org-query-test-if-ancestor-p
   (xt-note "Any ancestor of the current headline should match the condition.")
   (xtd-return= (org-query-test-do 't
-                (org-query-struct-ancestor (apply-partially 'org-query-stringmatch "A")))
+                (org-query-parent (org-query-stringmatch "A")))
                ("* A\n** C-!-\n" t)
                ("* B\n** C-!-\n" nil)
                ("* A\n** Bn*** C-!-\n" t)))
@@ -33,7 +22,7 @@
 (xt-deftest org-query-test-inbox
   (xt-note "Any headline in [Inbox] should match wether it is a task or not.")
   (xtd-return= (org-query-test-do 't
-                (org-query-struct-ancestor (apply-partially 'org-query-stringmatch "-Inbox-")))
+                (org-query-parent (org-query-stringmatch "-Inbox-")))
                ("* -Inbox-\n** TODO new-!-\n" t)
                ("* Other\n** TODO new-!-\n" nil)
                ("* -Inbox-\n** not a todo-!-\n" t)))
@@ -60,7 +49,7 @@
 (xt-deftest org-query-test-if-child-is-task
   (xt-note "Does any child of the current headline satisfy the condition.")
   (xtd-return= (org-query-test-do 't
-                 (org-query-struct-child (apply-partially 'org-query-stringmatch "Hoi")))
+                 (org-query-child (org-query-stringmatch "Hoi")))
                ("* TODO A-!-\n** Hoi\n" t)
                ("* TODO A-!-\n** B\n" nil)))
 

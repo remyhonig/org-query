@@ -1,25 +1,30 @@
 # EMACS = /Applications/Emacs.app/Contents/MacOS/Emacs
-EMACS = emacs
+# EMACS = /Users/rhonig/Downloads/Emacs.app/Contents/MacOS/Emacs
+EMACS ?= emacs
+CASK ?= cask
 
-CASK = ~/.cask/bin/cask
 CASKEMACS = $(CASK) exec $(EMACS)
-LOAD =  -L org-mode/lisp -l org-query.el -l test.el
+LOAD-ORGMODE = -L org-mode/lisp
 
 # http://stackoverflow.com/questions/3931741/why-does-make-think-the-target-is-up-to-date
-.PHONY: cask
+.PHONY: install build test clean
 
-all: test
+all: install build test clean
 
-cask:
-	$(shell EMACS=$(EMACS) $(CASK))
+# install dependencies
+install:
+	$(CASK) install
 
-compile:
-	$(CASKEMACS) -q  $(LOAD) org-query.el \
-	--eval "(progn (mapc #'byte-compile-file '(\"org-query.el\")) (switch-to-buffer \"*Compile-Log*\") (ert t))"
+build:
+	$(CASK) build
 
 test:
-	$(CASKEMACS) -batch ${LOAD} --eval="(message (concat \"Org version: \" (org-version) \" on Emacs version: \" (emacs-version)))"
-	$(CASKEMACS) -batch $(LOAD) -f ert-run-tests-batch-and-exit
+	$(CASKEMACS) -batch --eval="(message (concat \"Org version: \" (org-version) \" on Emacs version: \" (emacs-version)))"
+	$(CASK) exec ert-runner
+
+test2:
+	$(CASKEMACS) -batch ${LOAD-ORGMODE} --eval="(message (concat \"Org version: \" (org-version) \" on Emacs version: \" (emacs-version)))"
+	$(CASK) exec ert-runner -l org-mode/lisp/org.el
 
 clean:
-	rm -f *.elc
+	$(CASK) clean-elc

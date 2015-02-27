@@ -78,39 +78,6 @@ This function is mainly used as a single point to print debug messages."
     (not (null (member (org-get-todo-state) match-states)))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; convenience functions ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun org-query-is-parent-headline-p (match)
-  "Does parent headline value MATCH."
-  (org-query-struct-ancestor (apply-partially 'org-query-stringmatch match)))
-
-(defun org-query-if-project-p (&optional todo-states)
-  "Is headline a project and is it's todo kwd one of TODO-STATES?"
-  (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
-    ;; (message "if-project-p match %S on %S with %S and %S" match-states (org-heading-components) org-todo-keywords (mapcar 'car org-todo-kwd-alist))
-    (and
-     ;; is headline a task
-     (org-query-todo match-states)
-     ;; does any child have a todo state
-     (org-query-struct-child 'org-query-todo))))
-
-(defun org-query-if-project-task-p (&optional project-todo-states task-todo-states)
-  "Is headline a task in a project?
-PROJECT-TODO-STATES optional list of todo states the project should be in
-TASK-TODO-STATES optional list of todo states the task should be in"
-  (setq match-project-states (cond (project-todo-states project-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
-  (setq match-task-states (cond (task-todo-states task-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
-  (and
-   ;; headline should be a todo 
-   (org-query-todo match-task-states)
-   ;; should not have a child;; otherwise i'd be a project
-   (not (org-query-struct-child 'org-query-todo))
-   ;; is one it's ancestors a task
-   (org-query-struct-ancestor (apply-partially 'org-query-todo match-project-states))))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; skipping functions ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,6 +112,18 @@ Argument BODY should return t or nil"
     `(lambda ()
        (,skipfunc
         (lambda () (not (,@body)))))))
+
+(defmacro org-query-parent (body)
+  ()
+  `(org-query-struct-ancestor (lambda () (,@body))))
+
+(defmacro org-query-child (body)
+  ()
+  `(org-query-struct-child (lambda () (,@body))))
+
+(defmacro org-query-headline (body)
+  ()
+  `(org-query-struct-headline (lambda () (,@body))))
 
 (provide 'org-query)
 
