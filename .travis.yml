@@ -1,12 +1,12 @@
 language: emacs-lisp
 before_install:
-  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/cask/cask/master/go | python
-  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/rejeep/evm/master/go | bash
   - export PATH="~/.evm/bin:$PATH"
+  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/rejeep/evm/master/go | bash
+  - evm install $EVM_EMACS --use
   - export PATH="~/.cask/bin:$PATH"
-  - git clone git://orgmode.org/org-mode.git && cd org-mode && git checkout ${ORG} && make autoloads && cd ..
-  - evm install $EMACS --use
+  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/cask/cask/master/go | python
   - cask
+  - git clone git://orgmode.org/org-mode.git && cd org-mode && git checkout ${ORG} && make autoloads && cd ..
 env:
   # I want to use Cask to gather dependencies
   # Cask does not support Emacs 23.
@@ -15,10 +15,10 @@ env:
 
   # test the minimum supported requirements
   # 8.2.6 fails with (error "`recenter'ing a window that does not display current-buffer.")
-  - EMACS=emacs-24.4-bin ORG=release_8.2.7
+  - EVM_EMACS=emacs-24.4-bin ORG=release_8.2.7
 
   # test latest released emacs and org-mode
-  - EMACS=emacs-24.4-bin ORG=release_8.2.10
+  - EVM_EMACS=emacs-24.4-bin ORG=release_8.2.10
   
 script:
   - make test
