@@ -29,36 +29,55 @@
 
 (require 'org-query)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; convenience functions ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun org-query-is-parent-headline-p (match)
-  "Does parent headline value MATCH."
-  (org-query-struct-ancestor (apply-partially 'org-query-stringmatch match)))
+;; Projects
 
-(defun org-query-if-project-p (&optional todo-states)
-  "Is headline a project and is it's todo kwd one of TODO-STATES?"
-  (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
-    ;; (message "if-project-p match %S on %S with %S and %S" match-states (org-heading-components) org-todo-keywords (mapcar 'car org-todo-kwd-alist))
-    (and
-     ;; is headline a task
-     (org-query-todo match-states)
-     ;; does any child have a todo state
-     (org-query-child (org-query-todo)))))
-
-(defun org-query-if-project-task-p (&optional project-todo-states task-todo-states)
-  "Is headline a task in a project?
-PROJECT-TODO-STATES optional list of todo states the project should be in
-TASK-TODO-STATES optional list of todo states the task should be in"
-  (setq match-project-states (cond (project-todo-states project-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
-  (setq match-task-states (cond (task-todo-states task-todo-states) (t (mapcar 'car org-todo-kwd-alist))))
+(defun org-query-gtd-active-project () 
+  "Is the headline at point an active project"
   (and
-   ;; headline should be a todo 
-   (org-query-todo match-task-states)
-   ;; should not have a child;; otherwise i'd be a project
-   (not (org-query-child (org-query-todo)))
-   ;; is one it's ancestors a task
-   (org-query-parent (org-query-todo match-project-states))))
+   (not (org-query-parent (org-query-stringmatch "^Someday / Maybe")))
+   (org-query-child (org-query-todo))
+   (org-query-todo '("NEXT"))))
+
+
+(defun org-query-gtd-project () 
+  "Is the headline at point a waiting project"
+  (and
+   (not (org-query-parent (org-query-stringmatch "^Someday / Maybe")))
+   (org-query-child (org-query-todo))))
+
+
+(defun org-query-gtd-active-project-armed ()
+  "Active project with a NEXT state child"
+  (and (org-query-gtd-active-project)
+       (org-query-child (org-query-todo '("NEXT" "WAITING")))))
+
+
+(defun org-query-gtd-active-project-stuck ()
+  "Active project with a NEXT state child"
+  (and (org-query-gtd-active-project)
+       (not (org-query-child (org-query-todo '("NEXT" "WAITING"))))))
+
+
+(defun org-query-gtd-refile ()
+  "Tasks to refile"
+  (org-query-parent (org-query-stringmatch "^Inbox")))
+
+
+(defun org-query-gtd-active-project-next-task ()
+  "Is the headline a next action in an active project."
+  (and
+   (org-query-parent (org-query-gtd-active-project))
+   (org-query-todo '("NEXT"))))
+
+
+(defun org-query-gtd-loose-task ()
+  "Tasks that do not belong to any project"
+  (not (or
+        (org-query-parent (or
+                           (org-query-todo)
+                           (org-query-stringmatch "\\(^Inbox\\|^Someday / Maybe\\)")))
+        (org-query-child (org-query-todo)))))
+
 
 (provide 'org-query-gtd)

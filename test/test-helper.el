@@ -1,3 +1,7 @@
+(load-file "org-query.el")
+(load-file "org-query-gtd.el")
+(require 'xtest)
+
 (defmacro org-query-test-do (with-seq-todo body)
   `(lambda (_)
      (if ,with-seq-todo
