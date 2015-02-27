@@ -114,14 +114,17 @@ Argument BODY should return t or nil"
         (lambda () (not (,@body)))))))
 
 (defmacro org-query-parent (body)
+  "Just a macro to run BODY in a lambda"
   ()
   `(org-query-struct-ancestor (lambda () (,@body))))
 
 (defmacro org-query-child (body)
+  "Just a macro to run BODY in a lambda"
   ()
   `(org-query-struct-child (lambda () (,@body))))
 
 (defmacro org-query-headline (body)
+  "Just a macro to run BODY in a lambda"
   ()
   `(org-query-struct-headline (lambda () (,@body))))
 

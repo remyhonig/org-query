@@ -1,122 +1,249 @@
 [[https://travis-ci.org/remyhonig/org-query][https://travis-ci.org/remyhonig/org-query.svg?branch=master]]
 
-* Usage
+* Problem
+
+I wanted to use the /Getting Things Done/ productivity method for
+managing my projects and tasks and the only way I knew how to do this
+was by copying the relevant functions from [[http://doc.norang.ca/org-mode.html#Projects][Bernt Hansen]] but when I
+wanted to customize the views I discovered this was error-prone and
+not very convenient. So I decided to write my own helper functions
+which I turned into =org-query=. 
+
+* Solution
+
+** Features
+
+*** Selection DSL
+
+To include entries in the agenda blocks you can use queries like this.
+
+#+BEGIN_SRC emacs-lisp
+  ;; Skip the whole tree if the condition is not met
+  (org-query-select "tree"
+
+   ;; All criteria must be satisfied
+   (and
+
+    ;; Don't match trees under the Someday / Maybe headline
+    (not (org-query-parent (org-query-stringmatch "^Someday / Maybe")))
+
+    ;; The headline should have at least one child with a todo state
+    (org-query-child (org-query-todo))
+
+    ;; The headline itself should have the NEXT todo state
+    (org-query-todo '("NEXT"))))
+#+END_SRC
+
+
+** Example
+
+*** Orgmode Tree
+
+#+BEGIN_SRC text
+ * Inbox
+ ** TODO do something
+ * Areas of Focus
+ ** Finances
+ *** NEXT implement budget
+ **** NEXT map current expenditures
+ **** TODO map current income
+ **** TODO set budgets
+ **** TODO setup automatic transactions 
+ *** WAITING change bank
+ **** DONE transfer all funds to new bank account
+ **** DONE close previous bank account
+ **** WAITING verify funds are in new bank account
+ ** Programming
+ *** TODO create org-query v2
+ **** NEXT make coffee
+ **** TODO checkout repo from github
+ **** WAITING pull request to other project
+ **** Someday / Maybe 
+ ***** TODO caching
+ ** Family
+ *** NEXT go to the movies
+ **** DONE choose movie
+ **** TODO buy tickets
+ **** TODO pickup tickets 
+ #+END_SRC
+
+*** Agenda View
+
+#+BEGIN_SRC text
+============================================================
+Task to refile
+  test:       TODO do something
+
+============================================================
+Tasks waiting for something
+  test:       WAITING verify funds are in new bank account
+  test:       WAITING pull request to other project
+
+============================================================
+Next tasks in active projects
+  test:       NEXT map current expenditures
+
+============================================================
+Active projects with a next task
+  test:       NEXT implement budget
+
+============================================================
+Active projects without next task
+  test:       NEXT go to the movies
+
+============================================================
+Waiting projects
+  test:       WAITING change bank
+
+============================================================
+Backlog of active projects
+  test:       TODO map current income
+  test:       TODO set budgets
+  test:       TODO setup automatic transactions
+  test:       TODO buy tickets
+  test:       TODO pickup tickets
+#+END_SRC
+
+** Usage
 
 #+name: org-config
 #+BEGIN_SRC emacs-lisp
-  (defun org-query-is-active-project-p () 
+  (defun rmh/is-active-project () 
     "Is the headline at point an active project"
     (and
      (not (org-query-is-parent-headline-p "^Someday / Maybe"))
      (org-query-if-project-p '("NEXT"))))
 
-  (defun org-query-is-unstucking-action-p ()
+  (defun rmh/is-waiting-project () 
+    "Is the headline at point a waiting project"
+    (and
+     (not (org-query-is-parent-headline-p "^Someday / Maybe"))
+     (org-query-if-project-p '("WAITING"))))
+
+  (defun rmh/is-unstucking-todo ()
     "Is the headline an action that makes it's project non-stuck."
-    (org-query-if-todo-p '("NEXT" "WAITING")))
+    (org-query-todo '("NEXT" "WAITING")))
 
-  (defun tasks-waiting ()
-    `(tags-todo "/+WAITING|+DEFERRED"
-                ((org-agenda-overriding-header "Tasks waiting for something")
-                 (org-tags-match-list-sublevels nil)
-                 (org-agenda-todo-ignore-scheduled t)
-                 (org-agenda-todo-ignore-deadlines t)
-                 )))
+  (defun rmh/is-active-project-next-task ()
+    "Is the headline a next action in an active project."
+    (org-query-if-project-task-p '("NEXT") '("NEXT")))
 
-  (defun next-in-active ()
-    `(tags-todo "/+NEXT"
-                ((org-agenda-overriding-header "Next tasks in active projects")
-                 (org-agenda-skip-function
-                  (org-query-select "headline"
-                              (and (org-query-if-ancestor-p 'org-query-is-active-project-p) 
-                                   (org-query-if-project-task-p '("NEXT") '("NEXT")))))
-                 (org-tags-match-list-sublevels t)
-                 (org-agenda-todo-ignore-scheduled t)
-                 (org-agenda-todo-ignore-deadlines t)
-                 (org-agenda-todo-ignore-with-date t)
-                 (org-agenda-sorting-strategy
-                  '(todo-state-down effort-up category-keep)))))
+  (defun rmh/agendablock-tasks-waiting ()
+    (let ((skip (org-query-select "headline" (not (rmh/is-waiting-project)))))
+      `(tags-todo "/+WAITING|+DEFERRED"
+                  ((org-agenda-overriding-header "Tasks waiting for something")
+                   (org-tags-match-list-sublevels nil)
+                   (org-agenda-skip-function ,skip)
+                   (org-agenda-todo-ignore-scheduled t)
+                   (org-agenda-todo-ignore-deadlines t)
+                   ))))
 
-  (defun backlog-of-active ()
-    `(tags-todo "/+TODO"
-                ((org-agenda-overriding-header "Backlog of active projects")
-                 (org-agenda-skip-function
-                  (org-query-select "headline" (org-query-if-ancestor-p 'org-query-is-active-project-p)))
-                 (org-agenda-todo-ignore-scheduled t)
-                 (org-agenda-todo-ignore-deadlines t)
-                 (org-agenda-todo-ignore-with-date t)
-                 (org-agenda-sorting-strategy
-                  '(category-keep)))))
+  (defun rmh/agendablock-next-in-active ()
+    (let ((skip (org-query-select "headline"
+                                  (and (org-query-parent (rmh/is-active-project)) 
+                                       (rmh/is-active-project-next-task)))))
+      `(tags-todo "/+NEXT"
+                  ((org-agenda-overriding-header "Next tasks in active projects")
+                   (org-agenda-skip-function ,skip)
+                   (org-tags-match-list-sublevels t)
+                   (org-agenda-todo-ignore-scheduled bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-deadlines bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-with-date bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-sorting-strategy
+                    '(todo-state-down effort-up category-keep))))))
 
-  (defun active-projects-without-next ()
-    `(tags-todo "/+NEXT"
-                ((org-agenda-overriding-header "Active projects without next task")
-                 (org-agenda-skip-function
-                  (org-query-select "tree"
-                              (and (org-query-is-active-project-p)
-                                   (not (org-query-if-child-p 'org-query-is-unstucking-action-p)))))
-                 (org-tags-match-list-sublevels 't)
-                 (org-agenda-sorting-strategy
-                  '(category-keep)))))
+  (defun rmh/agendablock-backlog-of-active ()
+    (let ((skip (org-query-select "headline" (org-query-parent (rmh/is-active-project)))))
+      `(tags-todo "/+TODO"
+                  ((org-agenda-overriding-header "Backlog of active projects")
+                   (org-agenda-skip-function ,skip)
+                   (org-agenda-todo-ignore-scheduled bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-deadlines bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-with-date bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-sorting-strategy
+                    '(category-keep))))))
 
-  (defun active-projects-with-next ()
-    `(tags-todo "/+NEXT"
-                ((org-agenda-overriding-header "Active projects with a next task")
-                 (org-agenda-skip-function
-                  (org-query-select "tree"
-                              (and (org-query-is-active-project-p)
-                                   (org-query-if-child-p 'org-query-is-unstucking-action-p))))
-                 (org-tags-match-list-sublevels 't)
-                 (org-agenda-sorting-strategy
-                  '(category-keep)))))
+  (defun rmh/agendablock-active-projects-without-next ()
+    (let ((skip (org-query-select "tree"
+                              (and (rmh/is-active-project)
+                                   (not (org-query-child (rmh/is-unstucking-todo)))))))
+      `(tags-todo "/+NEXT"
+                  ((org-agenda-overriding-header "Active projects without next task")
+                   (org-agenda-skip-function ,skip)
+                   (org-tags-match-list-sublevels 't)
+                   (org-agenda-sorting-strategy
+                    '(category-keep))))))
 
-  (defun loose-tasks ()
-    `(tags-todo "/+TODO"
-                ((org-agenda-overriding-header "Tasks not belonging to a project")
-                 (org-agenda-skip-function
-                  (org-query-select "headline"
-                              (not (or
-                               (org-query-if-project-task-p)
-                               (org-query-if-project-p)
-                               (org-is-habit-p)
-                               (org-query-is-parent-headline-p "\\(^Inbox\\|^Someday / Maybe\\)")))))
-                 (org-agenda-todo-ignore-scheduled t)
-                 (org-agenda-todo-ignore-deadlines t)
-                 (org-agenda-todo-ignore-with-date t)
-                 (org-agenda-sorting-strategy
-                  '(category-keep)))))
+  (defun rmh/agendablock-active-projects-with-next ()
+    (let ((skip (org-query-select "tree"
+                                      (and (rmh/is-active-project)
+                                           (org-query-child (rmh/is-unstucking-todo))))))
+      `(tags-todo "/+NEXT"
+                  ((org-agenda-overriding-header "Active projects with a next task")
+                   (org-agenda-skip-function ,skip)
+                   (org-tags-match-list-sublevels 't)
+                   (org-agenda-sorting-strategy
+                    '(category-keep))))))
 
-  (defun checklists ()
+  (defun rmh/agendablock-waiting-projects ()
+    (let ((skip (org-query-select "tree" (rmh/is-waiting-project))))
+      `(tags-todo "/+WAITING"
+                  ((org-agenda-overriding-header "Waiting projects")
+                   (org-agenda-skip-function ,skip)
+                   (org-tags-match-list-sublevels 't)
+                   (org-agenda-sorting-strategy
+                    '(category-keep))))))
+
+  (defun rmh/agendablock-loose-tasks ()
+    (let ((skip (org-query-select "headline"
+                                      (not (or
+                                            (org-query-if-project-task-p)
+                                            (org-query-if-project-p)
+                                            (org-is-habit-p)
+                                            (org-query-is-parent-headline-p "\\(^Inbox\\|^Someday / Maybe\\)"))))))
+      `(tags-todo "/+TODO"
+                  ((org-agenda-overriding-header "Tasks not belonging to a project")
+                   (org-agenda-skip-function ,skip)
+                   (org-agenda-todo-ignore-scheduled bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-deadlines bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-todo-ignore-with-date bh/hide-scheduled-and-waiting-next-tasks)
+                   (org-agenda-sorting-strategy
+                    '(category-keep))))))
+
+  (defun rmh/agendablock-checklists ()
     `(tags "CHECKLIST"
            ((org-agenda-overriding-header "Checklists")
             (org-tags-match-list-sublevels nil))))
 
-  (defun inbox ()
-    `(tags-todo "LEVEL=2"
-                ((org-agenda-overriding-header "Tasks to refile")
-                 (org-agenda-skip-function (org-query-select "tree" (org-query-is-parent-headline-p "Inbox")))
-                 (org-tags-match-list-sublevels nil))))
+  (defun rmh/agendablock-inbox ()
+    (let ((skip (org-query-select "tree" (org-query-is-parent-headline-p "Inbox"))))
+      `(tags-todo "LEVEL=2"
+                  ((org-agenda-overriding-header "Tasks to refile")
+                   (org-agenda-skip-function ,skip)
+                   (org-tags-match-list-sublevels nil)))))
 
 
   (setq org-agenda-custom-commands
-        `((" " "Agenda"
+        `(" " "Agenda"
            ((agenda "" ((org-agenda-ndays 1)))
-            ,(inbox)
-            ,(tasks-waiting)
-            ,(next-in-active)
-            ,(active-projects-with-next)
-            ,(active-projects-without-next)
-            ,(backlog-of-active)
-            ,(checklists))
+            ,(rmh/agendablock-inbox)
+            ,(rmh/agendablock-tasks-waiting)
+            ,(rmh/agendablock-next-in-active)
+            ,(rmh/agendablock-active-projects-with-next)
+            ,(rmh/agendablock-active-projects-without-next)
+            ,(rmh/agendablock-waiting-projects)
+            ,(rmh/agendablock-backlog-of-active)
+            ,(rmh/agendablock-checklists))
            nil)
           ("r" "Review Agenda"
            ((agenda "" ((org-agenda-ndays 1)))
-            ,(inbox)
-            ,(loose-tasks)
-            ,(tasks-waiting)
-            ,(next-in-active)
-            ,(active-projects-with-next)
-            ,(active-projects-without-next)
-            ,(backlog-of-active)
-            ,(checklists))
-           nil)))
+            ,(rmh/agendablock-inbox)
+            ,(rmh/agendablock-loose-tasks)
+            ,(rmh/agendablock-tasks-waiting)
+            ,(rmh/agendablock-next-in-active)
+            ,(rmh/agendablock-active-projects-with-next)
+            ,(rmh/agendablock-active-projects-without-next)
+            ,(rmh/agendablock-backlog-of-active)
+            ,(rmh/agendablock-checklists))
+           nil))
 #+END_SRC
