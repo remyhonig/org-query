@@ -34,6 +34,9 @@ To include entries in the agenda blocks you can use queries like this.
     (org-query-todo '("NEXT"))))
 #+END_SRC
 
+This in contrast to the [[https://www.gnu.org/software/emacs/manual/html_node/org/Special-agenda-views.html][standard skip functions]] included in =orgmode=
+by default. The problem with those functions is that they cannot be
+combined very easily or intuitively.
 
 ** Example
 
