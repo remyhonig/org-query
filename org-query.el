@@ -86,7 +86,8 @@ This function is mainly used as a single point to print debug messages."
   "Return marker to next headline if FUNC satisfies."
   (save-restriction
     (widen)
-    (let ((marker (save-excursion (or (outline-next-heading) (point-max)))))
+    (let ((marker (save-excursion (or (outline-next-heading) (point-max))))
+          (satisfied nil))
       (setq satisfied (funcall func))
       (if satisfied marker nil))))
 
@@ -94,7 +95,8 @@ This function is mainly used as a single point to print debug messages."
   "Return marker to next headline if FUNC satisfies."
   (save-restriction
     (widen)
-    (let ((marker (save-excursion (org-end-of-subtree t))))
+    (let ((marker (save-excursion (org-end-of-subtree t)))
+          (satisfied nil))
       (setq satisfied (funcall func))
       (if satisfied marker nil))))
 
