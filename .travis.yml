@@ -1,10 +1,9 @@
 language: emacs-lisp
 before_install:
+  - curl -fsSkL https://gist.github.com/rejeep/7736123/raw | sh
   - export PATH="~/.evm/bin:$PATH"
-  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/rejeep/evm/master/go | bash
-  - evm install $EVM_EMACS --use
   - export PATH="~/.cask/bin:$PATH"
-  - curl -fsSkL --max-time 10 --retry 10 --retry-delay 10 https://raw.github.com/cask/cask/master/go | python
+  - evm install $EVM_EMACS --use
   - cask
   - git clone git://orgmode.org/org-mode.git && cd org-mode && git checkout ${ORG} && make autoloads && cd ..
 env:
