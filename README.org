@@ -139,7 +139,7 @@ Backlog of active projects
   (defun rmh/agendablock-backlog-of-active ()
     `(tags-todo "/+TODO"
                 ((org-agenda-overriding-header "Backlog of active projects")
-                 (org-agenda-skip-function (org-query-select "headline" (org-query-parent (org-query-gtd-active-project))))
+                 (org-agenda-skip-function (org-query-select "headline" (org-query-gtd-backlog-task)))
                  (org-agenda-todo-ignore-scheduled 't)
                  (org-agenda-todo-ignore-deadlines 't)
                  (org-agenda-todo-ignore-with-date 't)

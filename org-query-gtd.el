@@ -80,4 +80,10 @@
         (org-query-child (org-query-todo)))))
 
 
+(defun org-query-gtd-backlog-task ()
+  "Tasks in active project with a TODO state"
+  (and (org-query-parent (org-query-gtd-active-project))
+       (not (org-query-parent (org-query-stringmatch "^Someday / Maybe")))))
+
+
 (provide 'org-query-gtd)
