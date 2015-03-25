@@ -47,6 +47,13 @@
    (org-query-child (org-query-todo))))
 
 
+(defun org-query-gtd-someday-project () 
+  "Is the headline at point a waiting project"
+  (and
+   (org-query-parent (org-query-stringmatch "^Someday / Maybe"))
+   (org-query-child (org-query-todo))))
+
+
 (defun org-query-gtd-active-project-armed ()
   "Active project with a NEXT state child"
   (and (org-query-gtd-active-project)
@@ -79,6 +86,13 @@
                            (org-query-stringmatch "\\(^Inbox\\|^Someday / Maybe\\)")))
         (org-query-child (org-query-todo)))))
 
+(defun org-query-gtd-someday-loose-task ()
+  "Tasks that do not belong to any project"
+  (and
+   (org-query-parent (org-query-stringmatch "\\(^Inbox\\|^Someday / Maybe\\)"))
+   (and
+       (not (org-query-parent (org-query-todo)))
+       (not (org-query-child (org-query-todo))))))
 
 (defun org-query-gtd-backlog-task ()
   "Tasks in active project with a TODO state"
