@@ -194,7 +194,7 @@ Backlog of active projects
 
 
   (setq org-agenda-custom-commands
-        `(" " "Agenda"
+        `((" " "Agenda"
           ((agenda "" ((org-agenda-ndays 1)))
            ,(rmh/agendablock-inbox)
            ,(rmh/agendablock-tasks-waiting)
@@ -215,5 +215,5 @@ Backlog of active projects
           ,(rmh/agendablock-active-projects-without-next)
           ,(rmh/agendablock-backlog-of-active)
           ,(rmh/agendablock-checklists))
-         nil))
+         nil)))
 #+END_SRC
