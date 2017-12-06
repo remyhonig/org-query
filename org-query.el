@@ -33,45 +33,37 @@
 ;; structure walking ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun org-query-struct-ancestor (func)
-  "Is any ancestor t for FUNC.
-Return t if it does or nil if it does not."
-  (let ((result nil))
-    (save-excursion
-      (while (and (not result) (org-up-heading-safe))
-        (setq result (funcall func))))
-    result))
+(defsubst org-query-struct-ancestor (pred)
+  "Return non-nil if PRED is non-nil for any ancestor."
+  (save-excursion
+    (cl-loop while (org-up-heading-safe)
+             thereis (funcall pred))))
 
-(defun org-query-struct-child (func)
-  "Is any child satisfying FUNC.
-Return t if it does or nil if it does not."
-  (let ((satisfied)
-        (subtree-end (save-excursion (org-end-of-subtree t))))
-    (save-excursion
-      (forward-line 1)
-      (while (and (not satisfied)
-                  (< (point) subtree-end)
-                  (re-search-forward "^\*+ " subtree-end t))
-        (when (not (null (funcall func)))
-          (setq satisfied t))))
-    satisfied))
+(defsubst org-query-struct-child (pred)
+  "Return non-nil if PRED is non-nil for any child of current heading."
+  (save-excursion
+    (cl-loop with end = (save-excursion
+                          (org-end-of-subtree 'invisible-ok))
+             while (and (outline-next-heading)
+                        (< (point) end))
+             thereis (funcall pred))))
 
-(defun org-query-struct-headline (func)
-  "Does the headline at point satisfy FUNC.
-Return t if it does or nil if it does not.
-This function is mainly used as a single point to print debug messages."
-  (funcall func))
+(defsubst org-query-struct-headline (pred)
+  "Return non-nil if PRED is non-nil for current heading.
+This function is mainly used as a single point to print debug
+messages."
+  (funcall pred))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; headline matching ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun org-query-stringmatch (match)
+(defsubst org-query-stringmatch (match)
   "Is headline at point a MATCH."
   (not (null (string-match match (nth 4 (org-heading-components))))))
 
-(defun org-query-todo (&optional todo-states)
+(defsubst org-query-todo (&optional todo-states)
   "Is headline a task and is it's todo kwd one of TODO-STATES?"
   (let ((match-states (cond (todo-states todo-states) (t (mapcar 'car org-todo-kwd-alist)))))
     ;; (message "if-todo-p match %S on %S %S" match-states (org-heading-components) (org-get-todo-state))
@@ -82,23 +74,26 @@ This function is mainly used as a single point to print debug messages."
 ;; skipping functions ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun org-query-skip-headline (func)
-  "Return marker to next headline if FUNC satisfies."
-  (save-restriction
-    (widen)
-    (let ((marker (save-excursion (or (outline-next-heading) (point-max))))
-          (satisfied nil))
-      (setq satisfied (funcall func))
-      (if satisfied marker nil))))
+(cl-defsubst org-query-next-when (pred &key (next-fn #'outline-next-heading))
+  "Return position of next item if PRED is non-nil for current entry.
+NEXT-FN is called to find the next item,
+e.g. `outline-next-heading' or `org-end-of-subtree'."
+  (save-excursion
+    (save-restriction
+      ;; NOTE: Possibly unnecessary to widen.  Tests pass without it,
+      ;; and it should be faster without it:
+      ;; (widen)
+      (when (funcall pred)
+        (funcall next-fn)))))
 
-(defun org-query-skip-tree (func)
-  "Return marker to next headline if FUNC satisfies."
-  (save-restriction
-    (widen)
-    (let ((marker (save-excursion (org-end-of-subtree t)))
-          (satisfied nil))
-      (setq satisfied (funcall func))
-      (if satisfied marker nil))))
+(defsubst org-query-skip-headline (pred)
+  "Return position of next heading if PRED is non-nil for current heading."
+  (org-query-next-when pred))
+
+(defsubst org-query-skip-tree (pred)
+  "Return position of next subtree if PRED is non-nil for current heading."
+  (org-query-next-when pred :next-fn (lambda ()
+                                       (org-end-of-subtree t))))
 
 
 ;;;;;;;;;
